@@ -1,0 +1,62 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  MRS_30 — Adverse Action Logic microservice.
+  Provides CRA source population, application score fail reasons,
+  and Vantage score reason code lookups.
+
+Globals:
+  Function:
+    Timeout: 30
+    MemorySize: 256
+    Runtime: python3.12
+
+Resources:
+  AdverseActionFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: mrs30-adverse-action-logic
+      Description: Adverse Action Logic (MRS_30) Lambda function
+      Handler: lambda_handler.handler
+      CodeUri: .
+      Architectures:
+        - x86_64
+      Environment:
+        Variables:
+          MRS30_APP_NAME: "Adverse Action Logic (MRS_30)"
+          MRS30_APP_VERSION: "1.0.0"
+          MRS30_DEBUG: "false"
+      Events:
+        HealthCheck:
+          Type: HttpApi
+          Properties:
+            Path: /health
+            Method: GET
+        CraSources:
+          Type: HttpApi
+          Properties:
+            Path: /v1/cra-sources
+            Method: POST
+        AppScoreFailReasons:
+          Type: HttpApi
+          Properties:
+            Path: /v1/app-score-fail-reasons
+            Method: POST
+        VantageReasons:
+          Type: HttpApi
+          Properties:
+            Path: /v1/vantage-reasons
+            Method: POST
+        AdverseAction:
+          Type: HttpApi
+          Properties:
+            Path: /v1/adverse-action
+            Method: POST
+
+Outputs:
+  AdverseActionApi:
+    Description: "API Gateway endpoint URL"
+    Value: !Sub "https://${ServerlessHttpApi}.execute-api.${AWS::Region}.amazonaws.com"
+  AdverseActionFunction:
+    Description: "Lambda function ARN"
+    Value: !GetAtt AdverseActionFunction.Arn
